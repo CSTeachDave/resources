@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Albyn School Game Timer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&amp;family=Rajdhani:wght@500;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    .font-orbitron { font-family: 'Orbitron', monospace; }
+    .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+    
+    @keyframes pulse-glow {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.3); }
+    }
+    
+    @keyframes countdown-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    
+    @keyframes winner-celebration {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.05) rotate(-2deg); }
+      75% { transform: scale(1.05) rotate(2deg); }
+    }
+    
+    @keyframes button-pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+      50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.8), 0 0 60px rgba(255, 215, 0, 0.4); }
+    }
+    
+    @keyframes urgent-flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    .active-timer {
+      animation: countdown-pulse 0.5s ease-in-out infinite;
+    }
+    
+    .winner-panel {
+      animation: winner-celebration 0.5s ease-in-out infinite;
+    }
+    
+    .switch-button-active {
+      animation: button-pulse 1s ease-in-out infinite;
+    }
+    
+    .urgent {
+      animation: urgent-flash 0.3s ease-in-out infinite;
+    }
+    
+    .timer-ring {
+      stroke-dasharray: 283;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 0.1s linear;
+    }
+    
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full m-0 overflow-auto">
+  <div id="app" class="min-h-full w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"><!-- Setup Screen -->
+   <div id="setup-screen" class="min-h-full flex flex-col items-center justify-center p-8">
+    <div class="text-center mb-12">
+     <h1 id="main-title" class="font-orbitron text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 mb-4 tracking-wider">Albyn School Game Timer</h1>
+     <p class="font-rajdhani text-xl text-slate-400 tracking-widest">THE ULTIMATE TIMER SHOWDOWN</p>
+    </div>
+    <div class="glass-effect rounded-2xl p-8 md:p-12 w-full max-w-2xl">
+     <div class="grid md:grid-cols-2 gap-8 mb-8"><!-- Team 1 Input -->
+      <div class="space-y-3"><label for="team1-input" class="font-rajdhani text-lg text-cyan-400 tracking-wider flex items-center gap-2"> <span class="w-3 h-3 bg-cyan-400 rounded-full"></span> TEAM 1 (STARTS FIRST) </label> <input type="text" id="team1-input" placeholder="Enter team name..." class="w-full bg-slate-800/80 border-2 border-cyan-500/50 rounded-xl px-5 py-4 font-rajdhani text-xl text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 transition-all">
+      </div><!-- Team 2 Input -->
+      <div class="space-y-3"><label for="team2-input" class="font-rajdhani text-lg text-rose-400 tracking-wider flex items-center gap-2"> <span class="w-3 h-3 bg-rose-400 rounded-full"></span> TEAM 2 </label> <input type="text" id="team2-input" placeholder="Enter team name..." class="w-full bg-slate-800/80 border-2 border-rose-500/50 rounded-xl px-5 py-4 font-rajdhani text-xl text-white placeholder-slate-500 focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-400/30 transition-all">
+      </div>
+     </div><!-- Timer Duration -->
+     <div class="mb-8"><label for="timer-duration" class="font-rajdhani text-lg text-amber-400 tracking-wider block mb-3"> ⏱️ TIMER DURATION (SECONDS) </label> <input type="number" id="timer-duration" value="60" min="10" max="300" class="w-full bg-slate-800/80 border-2 border-amber-500/50 rounded-xl px-5 py-4 font-orbitron text-2xl text-amber-400 text-center focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/30 transition-all">
+     </div><!-- Start Button --> <button id="start-btn" class="w-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:via-yellow-300 hover:to-amber-400 text-slate-900 font-orbitron text-2xl font-bold py-5 rounded-xl transform hover:scale-[1.02] transition-all duration-200 shadow-lg shadow-amber-500/30"> START GAME </button>
+     <p id="error-msg" class="text-rose-400 font-rajdhani text-center mt-4 hidden">Please enter both team names!</p>
+    </div>
+   </div><!-- Game Screen -->
+   <div id="game-screen" class="hidden min-h-full">
+    <div class="flex flex-col md:flex-row min-h-full"><!-- Team 1 Panel -->
+     <div id="team1-panel" class="flex-1 bg-gradient-to-br from-cyan-900/50 via-slate-900 to-slate-900 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent pointer-events-none"></div>
+      <h2 id="team1-name" class="font-orbitron text-2xl md:text-4xl font-bold text-cyan-400 mb-6 text-center z-10 tracking-wider"></h2><!-- Timer Circle -->
+      <div class="relative w-48 h-48 md:w-64 md:h-64 z-10">
+       <svg class="w-full h-full transform -rotate-90"><circle cx="50%" cy="50%" r="45%" fill="none" stroke="rgba(6, 182, 212, 0.2)" stroke-width="8" /> <circle id="team1-ring" class="timer-ring" cx="50%" cy="50%" r="45%" fill="none" stroke="#06b6d4" stroke-width="8" stroke-linecap="round" />
+       </svg>
+       <div class="absolute inset-0 flex items-center justify-center"><span id="team1-time" class="font-orbitron text-5xl md:text-7xl font-black text-cyan-400"></span>
+       </div>
+      </div>
+      <div id="team1-status" class="font-rajdhani text-xl text-slate-400 mt-6 tracking-widest z-10">
+       WAITING
+      </div>
+     </div><!-- Center Button -->
+     <div class="flex items-center justify-center p-4 md:p-0 md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 z-20"><button id="switch-btn" class="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-amber-400 via-yellow-300 to-amber-500 text-slate-900 font-orbitron text-lg md:text-xl font-black shadow-2xl transform hover:scale-110 transition-all duration-200 flex items-center justify-center border-4 border-amber-200/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"> SWITCH! </button>
+     </div><!-- Team 2 Panel -->
+     <div id="team2-panel" class="flex-1 bg-gradient-to-bl from-rose-900/50 via-slate-900 to-slate-900 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-l from-rose-500/10 to-transparent pointer-events-none"></div>
+      <h2 id="team2-name" class="font-orbitron text-2xl md:text-4xl font-bold text-rose-400 mb-6 text-center z-10 tracking-wider"></h2><!-- Timer Circle -->
+      <div class="relative w-48 h-48 md:w-64 md:h-64 z-10">
+       <svg class="w-full h-full transform -rotate-90"><circle cx="50%" cy="50%" r="45%" fill="none" stroke="rgba(244, 63, 94, 0.2)" stroke-width="8" /> <circle id="team2-ring" class="timer-ring" cx="50%" cy="50%" r="45%" fill="none" stroke="#f43f5e" stroke-width="8" stroke-linecap="round" />
+       </svg>
+       <div class="absolute inset-0 flex items-center justify-center"><span id="team2-time" class="font-orbitron text-5xl md:text-7xl font-black text-rose-400"></span>
+       </div>
+      </div>
+      <div id="team2-status" class="font-rajdhani text-xl text-slate-400 mt-6 tracking-widest z-10">
+       WAITING
+      </div>
+     </div>
+    </div>
+   </div><!-- Winner Screen -->
+   <div id="winner-screen" class="hidden min-h-full flex flex-col items-center justify-center p-8">
+    <div class="text-center">
+     <div class="font-rajdhani text-2xl text-amber-400 tracking-widest mb-4">
+      🏆 WINNER 🏆
+     </div>
+     <h1 id="winner-name" class="font-orbitron text-5xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 mb-8"></h1>
+     <div class="glass-effect rounded-2xl p-8 mb-8">
+      <div class="grid grid-cols-2 gap-8">
+       <div class="text-center">
+        <p id="final-team1-name" class="font-rajdhani text-xl text-cyan-400 mb-2"></p>
+        <p id="final-team1-time" class="font-orbitron text-4xl text-cyan-300"></p>
+       </div>
+       <div class="text-center">
+        <p id="final-team2-name" class="font-rajdhani text-xl text-rose-400 mb-2"></p>
+        <p id="final-team2-time" class="font-orbitron text-4xl text-rose-300"></p>
+       </div>
+      </div>
+     </div><button id="play-again-btn" class="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:via-yellow-300 hover:to-amber-400 text-slate-900 font-orbitron text-xl font-bold px-12 py-4 rounded-xl transform hover:scale-105 transition-all duration-200 shadow-lg shadow-amber-500/30"> PLAY AGAIN </button>
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      game_title: 'Albyn School Game Timer',
+      start_button_text: 'START GAME',
+      switch_button_text: 'SWITCH!',
+      background_color: '#0f172a',
+      team1_color: '#06b6d4',
+      team2_color: '#f43f5e',
+      accent_color: '#fbbf24',
+      text_color: '#f8fafc'
+    };
+
+    let config = { ...defaultConfig };
+
+    // Game state
+    let team1Time = 0;
+    let team2Time = 0;
+    let initialTime = 0;
+    let activeTeam = 1;
+    let gameInterval = null;
+    let gameStarted = false;
+
+    // DOM Elements
+    const setupScreen = document.getElementById('setup-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const winnerScreen = document.getElementById('winner-screen');
+    const team1Input = document.getElementById('team1-input');
+    const team2Input = document.getElementById('team2-input');
+    const timerDuration = document.getElementById('timer-duration');
+    const startBtn = document.getElementById('start-btn');
+    const switchBtn = document.getElementById('switch-btn');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const errorMsg = document.getElementById('error-msg');
+
+    function formatTime(ms) {
+      const totalSeconds = Math.ceil(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      if (minutes > 0) {
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+      return totalSeconds.toString();
+    }
+
+    function updateTimerRing(ringId, currentTime, totalTime) {
+      const ring = document.getElementById(ringId);
+      const circumference = 283;
+      const progress = currentTime / totalTime;
+      const offset = circumference * (1 - progress);
+      ring.style.strokeDashoffset = offset;
+    }
+
+    function updateDisplay() {
+      const team1TimeEl = document.getElementById('team1-time');
+      const team2TimeEl = document.getElementById('team2-time');
+      const team1Status = document.getElementById('team1-status');
+      const team2Status = document.getElementById('team2-status');
+      const team1Panel = document.getElementById('team1-panel');
+      const team2Panel = document.getElementById('team2-panel');
+
+      team1TimeEl.textContent = formatTime(team1Time);
+      team2TimeEl.textContent = formatTime(team2Time);
+
+      updateTimerRing('team1-ring', team1Time, initialTime);
+      updateTimerRing('team2-ring', team2Time, initialTime);
+
+      // Update active states
+      team1Panel.classList.toggle('active-timer', activeTeam === 1 && gameStarted);
+      team2Panel.classList.toggle('active-timer', activeTeam === 2 && gameStarted);
+      
+      team1Status.textContent = activeTeam === 1 && gameStarted ? '⏱️ COUNTING DOWN' : 'PAUSED';
+      team2Status.textContent = activeTeam === 2 && gameStarted ? '⏱️ COUNTING DOWN' : 'PAUSED';
+
+      // Urgent warning when time is low
+      const team1TimeContainer = team1TimeEl.parentElement;
+      const team2TimeContainer = team2TimeEl.parentElement;
+      
+      team1TimeContainer.classList.toggle('urgent', team1Time <= 5000 && team1Time > 0);
+      team2TimeContainer.classList.toggle('urgent', team2Time <= 5000 && team2Time > 0);
+
+      // Button pulse when game is active
+      switchBtn.classList.toggle('switch-button-active', gameStarted);
+    }
+
+    function startGame() {
+      const team1Name = team1Input.value.trim();
+      const team2Name = team2Input.value.trim();
+      const duration = parseInt(timerDuration.value) || 60;
+
+      if (!team1Name || !team2Name) {
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      errorMsg.classList.add('hidden');
+
+      // Set up game
+      initialTime = duration * 1000;
+      team1Time = initialTime;
+      team2Time = initialTime;
+      activeTeam = 1;
+      gameStarted = true;
+
+      // Update team names
+      document.getElementById('team1-name').textContent = team1Name.toUpperCase();
+      document.getElementById('team2-name').textContent = team2Name.toUpperCase();
+
+      // Show game screen
+      setupScreen.classList.add('hidden');
+      gameScreen.classList.remove('hidden');
+      gameScreen.style.minHeight = '100%';
+      winnerScreen.classList.add('hidden');
+
+      updateDisplay();
+
+      // Start the timer
+      gameInterval = setInterval(() => {
+        if (activeTeam === 1) {
+          team1Time = Math.max(0, team1Time - 100);
+        } else {
+          team2Time = Math.max(0, team2Time - 100);
+        }
+
+        updateDisplay();
+
+        // Check for winner
+        if (team1Time <= 0 || team2Time <= 0) {
+          endGame();
+        }
+      }, 100);
+    }
+
+    function switchTeam() {
+      if (!gameStarted) return;
+      activeTeam = activeTeam === 1 ? 2 : 1;
+      updateDisplay();
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      gameStarted = false;
+
+      const team1Name = document.getElementById('team1-name').textContent;
+      const team2Name = document.getElementById('team2-name').textContent;
+
+      let winner;
+      if (team1Time <= 0) {
+        winner = team2Name;
+      } else {
+        winner = team1Name;
+      }
+
+      // Update winner screen
+      document.getElementById('winner-name').textContent = winner;
+      document.getElementById('final-team1-name').textContent = team1Name;
+      document.getElementById('final-team2-name').textContent = team2Name;
+      document.getElementById('final-team1-time').textContent = formatTime(team1Time);
+      document.getElementById('final-team2-time').textContent = formatTime(team2Time);
+
+      // Show winner screen
+      gameScreen.classList.add('hidden');
+      winnerScreen.classList.remove('hidden');
+    }
+
+    function resetGame() {
+      clearInterval(gameInterval);
+      gameStarted = false;
+      team1Time = 0;
+      team2Time = 0;
+      activeTeam = 1;
+
+      setupScreen.classList.remove('hidden');
+      gameScreen.classList.add('hidden');
+      winnerScreen.classList.add('hidden');
+    }
+
+    // Event listeners
+    startBtn.addEventListener('click', startGame);
+    switchBtn.addEventListener('click', switchTeam);
+    playAgainBtn.addEventListener('click', resetGame);
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && gameStarted) {
+        e.preventDefault();
+        switchTeam();
+      }
+    });
+
+    // Element SDK Integration
+    async function onConfigChange(newConfig) {
+      config = { ...defaultConfig, ...newConfig };
+      
+      document.getElementById('main-title').textContent = config.game_title || defaultConfig.game_title;
+      startBtn.textContent = config.start_button_text || defaultConfig.start_button_text;
+      switchBtn.textContent = config.switch_button_text || defaultConfig.switch_button_text;
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.background_color || defaultConfig.background_color,
+            set: (value) => { config.background_color = value; window.elementSdk.setConfig({ background_color: value }); }
+          },
+          {
+            get: () => config.team1_color || defaultConfig.team1_color,
+            set: (value) => { config.team1_color = value; window.elementSdk.setConfig({ team1_color: value }); }
+          },
+          {
+            get: () => config.team2_color || defaultConfig.team2_color,
+            set: (value) => { config.team2_color = value; window.elementSdk.setConfig({ team2_color: value }); }
+          },
+          {
+            get: () => config.accent_color || defaultConfig.accent_color,
+            set: (value) => { config.accent_color = value; window.elementSdk.setConfig({ accent_color: value }); }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => { config.text_color = value; window.elementSdk.setConfig({ text_color: value }); }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ['game_title', config.game_title || defaultConfig.game_title],
+        ['start_button_text', config.start_button_text || defaultConfig.start_button_text],
+        ['switch_button_text', config.switch_button_text || defaultConfig.switch_button_text]
+      ]);
+    }
+
+    // Initialize SDK
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c814c8fd735ef27',t:'MTc3MDExNTExMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
