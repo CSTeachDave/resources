@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSE Consent Quiz</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+
+        .app-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-auto;
+        }
+
+        .quiz-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 40px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+        }
+
+        .quiz-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .quiz-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .question-section {
+            margin-bottom: 30px;
+        }
+
+        .question-number {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .question-type {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            display: flex;
+            align-items: flex-start;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafafa;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .option input[type="radio"],
+        .option input[type="checkbox"] {
+            margin-right: 12px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .option-text {
+            flex: 1;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .true-false-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .tf-button {
+            padding: 12px 24px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #fafafa;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            color: #333;
+        }
+
+        .tf-button:hover {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .tf-button.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .feedback {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-top: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .feedback-label {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-prev {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-prev:hover {
+            background: #d0d0d0;
+        }
+
+        .results-screen {
+            text-align: center;
+        }
+
+        .results-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .results-message {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .score-breakdown {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .breakdown-label {
+            color: #666;
+        }
+
+        .breakdown-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 40px;
+            font-size: 16px;
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .start-screen {
+            text-align: center;
+        }
+
+        .start-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 16px;
+        }
+
+        .start-description {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .quiz-info {
+            background: #f0f3ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 15px;
+            color: #333;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-icon {
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 60px;
+            font-size: 16px;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="app-wrapper">
+   <div class="quiz-container" id="quizContainer"><!-- Content will be generated by JavaScript -->
+   </div>
+  </div>
+  <script>
+        const quizData = [
+            {
+                id: 1,
+                type: 'multiple-choice',
+                question: 'Your friend is upset and you want to give them a hug to comfort them. What should you do?',
+                options: [
+                    'Just hug them without asking – they clearly need it',
+                    'Ask if they\'d like a hug first',
+                    'Give them a high-five instead of a hug',
+                    'Leave them alone so you don\'t bother them'
+                ],
+                correctAnswer: 1,
+                explanation: 'Even when we think something is kind, we should always ask before physical contact.'
+            },
+            {
+                id: 2,
+                type: 'true-false',
+                question: 'If your best friend always lets you borrow their headphones, you don\'t need to ask anymore – you can just take them whenever you want.',
+                correctAnswer: false,
+                explanation: 'Just because someone has said yes before doesn\'t mean they always consent. You should ask each time, as they might need their belongings or not want to share that day.'
+            },
+            {
+                id: 3,
+                type: 'multiple-choice',
+                question: 'Your classmate asks to borrow £5 for lunch, saying they\'ll pay you back tomorrow. They seem a bit embarrassed to ask. What\'s the respectful thing to do?',
+                options: [
+                    'Lend them the money and feel good about helping',
+                    'Refuse because they might forget to pay you back',
+                    'Lend them the money AND agree on when they\'ll repay you',
+                    'Tell them to ask someone else'
+                ],
+                correctAnswer: 2,
+                explanation: 'Consent includes being clear about expectations. Agreeing on repayment protects both of you.'
+            },
+            {
+                id: 4,
+                type: 'multiple-choice',
+                question: 'Before taking a photo or video of someone, what should you do?',
+                options: [
+                    'Ask if they\'re okay with it, especially before posting it online',
+                    'Just take the photo – they can tell you they don\'t like it afterwards',
+                    'Only ask if they\'re in a professional setting',
+                    'Ask them only after you\'ve posted it'
+                ],
+                correctAnswer: 0,
+                explanation: 'People have the right to know when their image is being captured and shared.'
+            },
+            {
+                id: 5,
+                type: 'multiple-choice',
+                question: 'Your friend sends you a funny video of themselves being silly. They say "just for you!" Can you share it with your group chat?',
+                options: [
+                    'Yes, it\'s funny so everyone should see it',
+                    'No, not without asking them first',
+                    'Yes, but only if you blur their face',
+                    'You can share it if you don\'t tag them'
+                ],
+                correctAnswer: 1,
+                explanation: '"Just for you" means they\'ve only given consent to share it with you. Sharing it further breaks that trust.'
+            },
+            {
+                id: 6,
+                type: 'true-false',
+                question: 'Everyone likes hugs and physical affection equally, so you don\'t need to worry about personal space preferences.',
+                correctAnswer: false,
+                explanation: 'People have different comfort levels with physical contact. Some people like hugs, others prefer handshakes or no contact at all. It\'s important to respect these differences.'
+            },
+            {
+                id: 7,
+                type: 'multiple-choice',
+                question: 'Your partner wants to hold your hand, but you\'re not ready yet. What\'s a respectful way to handle this?',
+                options: [
+                    'Pretend you didn\'t notice and keep walking',
+                    'Tell them directly and kindly how you feel',
+                    'Hold their hand even though you don\'t want to, so they don\'t feel rejected',
+                    'Ignore them until they stop trying'
+                ],
+                correctAnswer: 1,
+                explanation: 'Honest, kind communication protects both people\'s feelings and builds trust.'
+            },
+            {
+                id: 8,
+                type: 'multiple-choice',
+                question: 'During PE class, your teacher wants the class to do a partner activity that involves physical contact (like partner stretches). What should happen?',
+                options: [
+                    'Everyone must do it – it\'s part of the curriculum',
+                    'Students should have the option to opt out or choose their partner',
+                    'Only students who volunteer should participate',
+                    'The teacher should decide who partners with whom'
+                ],
+                correctAnswer: 1,
+                explanation: 'Students should have choice and agency over physical contact, even in school settings.'
+            },
+            {
+                id: 9,
+                type: 'multiple-choice',
+                question: 'If someone says "no" when you ask to borrow something, what should you do?',
+                options: [
+                    'Keep asking until they change their mind',
+                    'Take it anyway – they might be grateful later',
+                    'Accept it and not pressure them',
+                    'Tell other people they won\'t share with you'
+                ],
+                correctAnswer: 2,
+                explanation: '"No" is a complete answer. Respecting "no" is part of respecting consent.'
+            },
+            {
+                id: 10,
+                type: 'true-false',
+                question: 'Once you delete a photo you posted online, it\'s completely gone and can\'t be shared by anyone else.',
+                correctAnswer: false,
+                explanation: 'Screenshots and downloads mean content can be saved and reshared. This is why consent before posting matters – you can\'t fully control where an image goes once it\'s online.'
+            },
+            {
+                id: 11,
+                type: 'multiple-choice',
+                question: 'Your friend is dating someone new. On their first date, their date tries to kiss them, but your friend isn\'t sure if they want to yet. Should your friend feel pressured to kiss because they\'re on a date?',
+                options: [
+                    'Yes, because it\'s expected on a date',
+                    'No, a date doesn\'t automatically mean physical intimacy should happen',
+                    'Only if they like the person',
+                    'It depends on who suggested the date'
+                ],
+                correctAnswer: 1,
+                explanation: 'A date doesn\'t automatically mean physical intimacy should happen. Honest communication about what both people want is important.'
+            },
+            {
+                id: 12,
+                type: 'multiple-choice',
+                question: 'A group of your friends is going to the cinema. One friend doesn\'t have money and says they can\'t afford to go. One person suggests "just lend them the money and they can pay you back later." What\'s the best approach?',
+                options: [
+                    'Pressure them to accept the loan so they come',
+                    'Invite them anyway and let them decide if they want to ask to borrow money',
+                    'Go without them',
+                    'Tell them they should get a job to afford it'
+                ],
+                correctAnswer: 1,
+                explanation: 'The decision to borrow money should be theirs to make without pressure. You can invite them, but the choice is up to them.'
+            },
+            {
+                id: 13,
+                type: 'true-false',
+                question: 'If you\'ve agreed to something once, you can change your mind later and withdraw your consent.',
+                correctAnswer: true,
+                explanation: 'Consent can always be withdrawn. Just because you said yes before doesn\'t mean you have to keep saying yes.'
+            },
+            {
+                id: 14,
+                type: 'multiple-choice',
+                question: 'Several friends are asking to copy your homework assignment. You don\'t feel comfortable with it. What\'s the respectful way to handle this?',
+                options: [
+                    'Copy it anyway because everyone\'s asking',
+                    'Say no and explain why you\'re not comfortable',
+                    'Give it to them but ask them to change it so it looks different',
+                    'Avoid the friends so they stop asking'
+                ],
+                correctAnswer: 1,
+                explanation: 'You have the right to say no, and a clear explanation helps friends understand your boundary.'
+            },
+            {
+                id: 15,
+                type: 'reflection',
+                question: 'In your own words, explain what consent means and why it matters in friendships and relationships.',
+                explanation: 'Great reflection! Consent means getting clear permission before doing something. It matters because it builds trust and respect between people.'
+            }
+        ];
+
+        let currentQuestion = 0;
+        let userAnswers = {};
+        let quizStarted = false;
+
+        function initializeQuiz() {
+            renderScreen();
+        }
+
+        function renderScreen() {
+            const container = document.getElementById('quizContainer');
+
+            if (!quizStarted) {
+                container.innerHTML = renderStartScreen();
+            } else if (currentQuestion < quizData.length) {
+                container.innerHTML = renderQuestion();
+            } else {
+                container.innerHTML = renderResults();
+            }
+        }
+
+        function renderStartScreen() {
+            return `
+                <div class="start-screen">
+                    <div class="quiz-header">
+                        <div class="quiz-title">PSE Consent Quiz</div>
+                        <div class="quiz-subtitle">Personal, Social & Health Education</div>
+                    </div>
+                    
+                    <div class="start-title">Understanding Consent</div>
+                    <div class="start-description">
+                        This quiz explores what consent means in everyday situations – from physical contact to sharing possessions and privacy. Learn how to communicate boundaries respectfully and build trusting relationships.
+                    </div>
+                    
+                    <div class="quiz-info">
+                        <div class="info-item">
+                            <div class="info-icon">📝</div>
+                            <div>15 questions covering consent in everyday situations</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon">⏱️</div>
+                            <div>Takes about 10-15 minutes to complete</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon">✓</div>
+                            <div>Get instant feedback and explanations for each answer</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon">🎯</div>
+                            <div>Learn about boundaries, communication, and respect</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-start" onclick="startQuiz()">Start Quiz</button>
+                </div>
+            `;
+        }
+
+        function renderQuestion() {
+            const question = quizData[currentQuestion];
+            const progress = ((currentQuestion) / quizData.length) * 100;
+
+            let questionContent = '';
+
+            switch (question.type) {
+                case 'multiple-choice':
+                    questionContent = renderMultipleChoice(question);
+                    break;
+                case 'true-false':
+                    questionContent = renderTrueFalse(question);
+                    break;
+                case 'reflection':
+                    questionContent = renderReflection(question);
+                    break;
+            }
+
+            return `
+                <div>
+                    <div class="quiz-header">
+                        <div class="quiz-title">PSE Consent Quiz</div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    
+                    <div class="question-section">
+                        <div class="question-number">Question ${currentQuestion + 1} of ${quizData.length}</div>
+                        <div class="question-type">${formatQuestionType(question.type)}</div>
+                        <div class="question-text">${question.question}</div>
+                        ${questionContent}
+                        ${renderFeedback(question)}
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn-prev" onclick="previousQuestion()" ${currentQuestion === 0 ? 'disabled' : ''}>
+                            ← Previous
+                        </button>
+                        <button class="btn-next" onclick="nextQuestion()" ${userAnswers[currentQuestion] === undefined || userAnswers[currentQuestion] === '' ? 'disabled' : ''}>
+                            ${currentQuestion === quizData.length - 1 ? 'Finish' : 'Next'} →
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMultipleChoice(question) {
+            const selectedAnswer = userAnswers[currentQuestion];
+            let html = '<div class="options-container">';
+
+            question.options.forEach((option, index) => {
+                const isSelected = selectedAnswer === index;
+                html += `
+                    <label class="option ${isSelected ? 'selected' : ''}">
+                        <input type="radio" name="answer" value="${index}" ${isSelected ? 'checked' : ''} onchange="updateAnswer(${currentQuestion}, ${index})">
+                        <div class="option-text">${option}</div>
+                    </label>
+                `;
+            });
+
+            html += '</div>';
+            return html;
+        }
+
+        function renderTrueFalse(question) {
+            const selectedAnswer = userAnswers[currentQuestion];
+            return `
+                <div class="true-false-container">
+                    <button class="tf-button ${selectedAnswer === true ? 'selected' : ''}" onclick="updateAnswer(${currentQuestion}, true)">
+                        True
+                    </button>
+                    <button class="tf-button ${selectedAnswer === false ? 'selected' : ''}" onclick="updateAnswer(${currentQuestion}, false)">
+                        False
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderReflection(question) {
+            const userInput = userAnswers[currentQuestion] || '';
+            return `
+                <div>
+                    <textarea class="text-input" placeholder="Write your reflection here..." style="min-height: 120px; resize: vertical; font-family: inherit;" onchange="updateAnswer(${currentQuestion}, this.value)">${userInput}</textarea>
+                </div>
+            `;
+        }
+
+        function renderFeedback(question) {
+            const userAnswer = userAnswers[currentQuestion];
+            if (userAnswer === undefined && userAnswer !== '') {
+                return '';
+            }
+
+            const question_obj = quizData[currentQuestion];
+            let isCorrect = false;
+
+            if (question_obj.type === 'multiple-choice' || question_obj.type === 'true-false') {
+                isCorrect = userAnswer === question_obj.correctAnswer;
+            }
+
+            if (question_obj.type === 'reflection' || (userAnswer !== undefined && userAnswer !== '')) {
+                return `
+                    <div class="feedback ${question_obj.type === 'reflection' ? 'correct' : (isCorrect ? 'correct' : 'incorrect')}">
+                        <div class="feedback-label">${question_obj.type === 'reflection' ? '💡 Reflection Recorded' : (isCorrect ? '✓ Correct!' : '✗ Not quite right')}</div>
+                        <div>${question_obj.explanation}</div>
+                    </div>
+                `;
+            }
+
+            return '';
+        }
+
+        function formatQuestionType(type) {
+            const typeMap = {
+                'multiple-choice': 'Multiple Choice',
+                'true-false': 'True or False',
+                'fill-blank': 'Fill in the Blank',
+                'reflection': 'Reflection Question'
+            };
+            return typeMap[type] || type;
+        }
+
+        function updateAnswer(questionIndex, answer) {
+            userAnswers[questionIndex] = answer;
+            renderScreen();
+        }
+
+        function startQuiz() {
+            quizStarted = true;
+            currentQuestion = 0;
+            renderScreen();
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < quizData.length - 1) {
+                currentQuestion++;
+                renderScreen();
+            } else {
+                renderScreen();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                renderScreen();
+            }
+        }
+
+        function renderResults() {
+            let correctCount = 0;
+            let scorableCount = 0;
+
+            quizData.forEach((question, index) => {
+                if (question.type !== 'reflection') {
+                    if (userAnswers[index] === question.correctAnswer) {
+                        correctCount++;
+                    }
+                    scorableCount++;
+                }
+            });
+
+            const percentage = Math.round((correctCount / scorableCount) * 100);
+            let message = '';
+
+            if (percentage === 100) {
+                message = 'Perfect score! You really understand consent and respect. Great job!';
+            } else if (percentage >= 80) {
+                message = 'Excellent work! You have a strong understanding of consent and boundaries.';
+            } else if (percentage >= 60) {
+                message = 'Good job! You\'ve got the key concepts down. Review the questions you missed to strengthen your knowledge.';
+            } else {
+                message = 'Keep learning! Consent is an important skill. Review the explanations and try again.';
+            }
+
+            return `
+                <div class="results-screen">
+                    <div class="quiz-header">
+                        <div class="quiz-title">Quiz Complete!</div>
+                    </div>
+                    
+                    <div class="results-score">${percentage}%</div>
+                    <div class="results-message">${message}</div>
+                    
+                    <div class="score-breakdown">
+                        <div class="breakdown-item">
+                            <div class="breakdown-label">Questions Answered:</div>
+                            <div class="breakdown-value">${scorableCount}</div>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-label">Correct Answers:</div>
+                            <div class="breakdown-value">${correctCount}</div>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-label">Your Score:</div>
+                            <div class="breakdown-value">${percentage}%</div>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-restart" onclick="restartQuiz()">Retake Quiz</button>
+                </div>
+            `;
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            userAnswers = {};
+            quizStarted = false;
+            renderScreen();
+        }
+
+        initializeQuiz();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c82c8b362f5b6cd',t:'MTc3MDEzMDY4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
